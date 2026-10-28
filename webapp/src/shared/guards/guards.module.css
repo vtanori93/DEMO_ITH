@@ -1,0 +1,27 @@
+.dialog {
+  width: min(calc(100% - 2rem), 30rem);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: 0 1.5rem 5rem #10201830;
+}
+.dialog::backdrop { background: #10201880; backdrop-filter: blur(4px); }
+:global(html):has(.dialog[open]) { overflow: hidden; }
+.eyebrow { font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.1em; color: var(--color-muted); }
+.dialog h2 { font-size: 1.5rem; line-height: 1.25; margin: 0.75rem 0; }
+.dialog p { color: var(--color-muted); margin: 0 0 1.5rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.keepButton {
+  min-height: var(--touch-target);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: #263c1b;
+  background: var(--color-accent);
+  font-weight: 700;
+}
+.keepButton:hover { background: var(--color-accent-hover); }

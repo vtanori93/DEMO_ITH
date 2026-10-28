@@ -1,0 +1,119 @@
+@import './styles/tokens.css';
+
+@font-face {
+  font-family: 'Candara';
+  src: url('/fonts/candara/Candara.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Candara';
+  src: url('/fonts/candara/Candara-Bold.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  font-family: var(--font-family);
+  font-size: 112.5%;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 0;
+}
+button,
+input,
+select,
+textarea,
+code,
+pre,
+svg text {
+  font-family: inherit;
+}
+button,
+input,
+select,
+textarea {
+  font-size: 1rem;
+}
+button,
+input,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+button,
+a,
+input {
+  touch-action: manipulation;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button,
+a,
+input,
+[tabindex] {
+  outline-offset: 4px;
+}
+:focus-visible {
+  outline: 2px solid var(--color-positive);
+}
+button svg,
+a svg {
+  flex-shrink: 0;
+}
+button {
+  line-height: 1.3;
+}
+input {
+  min-width: 0;
+}
+img,
+svg {
+  max-width: 100%;
+}
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: anywhere;
+}
+::selection {
+  background: #d3edb6;
+  color: #203713;
+}
+html {
+  scroll-padding-top: calc(var(--app-header-height, 5rem) + 1rem);
+  scroll-padding-bottom: 2rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

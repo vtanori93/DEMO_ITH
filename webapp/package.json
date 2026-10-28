@@ -1,0 +1,46 @@
+{
+  "name": "voltio-esp32",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run check && vite build",
+    "lint": "oxlint --deny-warnings",
+    "lint:fix": "oxlint --fix --deny-warnings",
+    "check": "npm run typecheck && npm run lint",
+    "preview": "vite preview",
+    "start": "node --env-file-if-exists=.env server/supervisor.ts",
+    "start:once": "node --env-file-if-exists=.env server/index.ts",
+    "typecheck": "tsc -b",
+    "test:unit": "node --test tests/telemetry.test.ts tests/telemetry-store.test.ts tests/network.test.ts tests/gateway.test.ts tests/pipes.test.ts tests/websocket-transport.test.ts tests/resilience.test.ts tests/indicators.test.ts tests/ngrok-discovery.test.ts",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e",
+    "mock:esp32": "node scripts/mock-esp32.ts",
+    "send:sample": "node scripts/send-sample.ts",
+    "tunnel": "ngrok http 5173",
+    "tunnel:preview": "ngrok http 4173"
+  },
+  "dependencies": {
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^8.5.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/ws": "^8.18.2",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.89.0",
+    "oxlint-tsgolint": "^7.0.2005",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5"
+  },
+  "description": "Monitor de temperatura de -30 a 100 °C, voltaje de 0 a 12 V y corriente de 0 a 50 A con ESP32 y WebSocket.",
+  "engines": {
+    "node": ">=22.22.0"
+  }
+}

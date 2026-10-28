@@ -1,0 +1,34 @@
+:root {
+  --font-family: 'Candara', sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --color-bg: #f5f7f6;
+  --color-surface: #fff;
+  --color-text: #22372c;
+  --color-muted: #64776a;
+  --color-subtle: #738378;
+  --color-border: #dfe7e0;
+  --color-soft: #f1f5ee;
+  --color-accent: #b7df8b;
+  --color-accent-hover: #a6d477;
+  --color-positive: #497721;
+  --color-warning: #86651e;
+  --color-danger: #a43d36;
+  --color-sidebar: #17271f;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --shadow-card: 0 2px 6px #19342404, 0 8px 24px #19342403;
+  --sidebar-width: 15rem;
+  --sidebar-collapsed-width: 5rem;
+  --touch-target: 2.75rem;
+  --page-gutter: clamp(1rem, 3vw, 2.5rem);
+  --transition: 160ms ease;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --page-gutter: 24px;
+  }
+}
