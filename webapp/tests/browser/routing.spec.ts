@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test('rutas directas, recarga, enlaces antiguos y página 404', async ({ page }) => {
+test('rutas directas, recarga, enlaces antiguos y redirección de rutas desconocidas', async ({ page }) => {
   for (const [path, title] of [
     ['/monitor', 'Monitor de variables'],
     ['/connection', 'Conecta tu dispositivo'],
@@ -14,17 +14,17 @@ test('rutas directas, recarga, enlaces antiguos y página 404', async ({ page })
     await expect(page).toHaveURL(new RegExp(`${path}$`))
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   }
-  await page.goto('/no-existe')
-  await expect(page.getByRole('heading', { name: 'Página no encontrada' })).toBeVisible()
-  await expect(page.getByRole('navigation', { name: 'Navegación principal', exact: true }).locator('[aria-current]')).toHaveCount(0)
-  await page.getByRole('link', { name: 'Volver al monitor', exact: true }).click()
-  await expect(page).toHaveURL(/\/monitor$/)
+  for (const path of ['/login', '/no-existe', '/ruta/anidada', '/login.html', '/login?from=prueba#detalle']) {
+    await page.goto(path)
+    await expect(page).toHaveURL(/\/monitor(?:#.*)?$/)
+    await expect(page.getByRole('heading', { name: 'Monitor de variables', exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Monitor', exact: true })).toHaveAttribute('aria-current', 'page')
+    await expect(page.getByText('Página no encontrada', { exact: true })).toHaveCount(0)
+  }
 })
 
 test('guard de configuración: bloquea sin receptor y se recupera sin recargar', async ({ page }) => {
   let available = false
-  const loadedPages: string[] = []
-  page.on('request', (request) => loadedPages.push(request.url()))
   await page.route('**/api/gateway/status', async (route) => {
     if (available) await route.continue()
     else await route.fulfill({ status: 503, json: { error: 'Receptor detenido' } })
@@ -32,7 +32,6 @@ test('guard de configuración: bloquea sin receptor y se recupera sin recargar',
   await page.goto('/connection')
   await expect(page.getByRole('heading', { name: 'Receptor no disponible' })).toBeVisible()
   await expect(page.getByLabel('Identificador del ESP32')).toHaveCount(0)
-  expect(loadedPages.some((url) => url.includes('/pages/ConnectionPage'))).toBe(false)
   available = true
   await expect(page.getByLabel('Identificador del ESP32')).toBeVisible()
   await expect(page).toHaveURL(/\/connection$/)
@@ -66,26 +65,18 @@ test('guard de salida permite conservar o descartar cambios sin guardar', async 
   await expect(dialog).toBeHidden()
 })
 
-test('la navegación carga cada vista bajo demanda y conserva el socket de telemetría', async ({ page }) => {
-  const requests: string[] = []
+test('la navegación conserva el socket de telemetría y el historial de rutas', async ({ page }) => {
   const sockets: string[] = []
-  page.on('request', (request) => requests.push(request.url()))
   page.on('websocket', (socket) => sockets.push(socket.url()))
   await page.goto('/monitor')
   await expect(page.getByRole('heading', { name: 'Monitor de variables', exact: true })).toBeVisible()
   await expect(page.getByTestId('connection-status')).toHaveText('Conectado')
-  expect(requests.some((url) => url.includes('/pages/MonitorPage'))).toBe(true)
-  expect(requests.some((url) => url.includes('/pages/ConnectionPage'))).toBe(false)
-  expect(requests.some((url) => url.includes('/pages/ProtocolPage'))).toBe(false)
   const initialSockets = sockets.filter((url) => url.endsWith('/ws/monitor')).length
   expect(initialSockets).toBe(1)
   await page.getByRole('link', { name: 'Conexión', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Conecta tu dispositivo', exact: true })).toBeVisible()
-  expect(requests.some((url) => url.includes('/pages/ConnectionPage'))).toBe(true)
-  expect(requests.some((url) => url.includes('/pages/ProtocolPage'))).toBe(false)
   await page.getByRole('link', { name: 'Protocolo de datos', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Un lenguaje en común', exact: true })).toBeVisible()
-  expect(requests.some((url) => url.includes('/pages/ProtocolPage'))).toBe(true)
   await page.goBack()
   await expect(page).toHaveURL(/\/connection$/)
   await page.goBack()
@@ -130,12 +121,19 @@ test('el guard de cambios funciona con el menú móvil y libera el bloqueo del f
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).overflow)).not.toBe('hidden')
 })
 
-test('un fallo de carga diferida ofrece recuperación sin perder la navegación', async ({ page }) => {
-  await page.route('**/src/pages/ProtocolPage.tsx*', (route) => route.abort())
-  await page.goto('/monitor')
-  await page.getByRole('link', { name: 'Protocolo de datos', exact: true }).click()
+test('un fallo de renderizado conserva la navegación y permite recargar', async ({ page }) => {
+  await page.goto('/protocol')
+  await expect(page.getByRole('heading', { name: 'Un lenguaje en común' })).toBeVisible()
+  await page.evaluate(() => {
+    window.ResizeObserver = class extends ResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        super(callback)
+        throw new Error('Fallo de renderizado de prueba')
+      }
+    }
+  })
+  await page.getByRole('link', { name: 'Monitor', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'No pudimos abrir esta vista' })).toBeVisible()
-  await page.unroute('**/src/pages/ProtocolPage.tsx*')
   await page.getByRole('button', { name: 'Volver a cargar', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Un lenguaje en común', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Monitor de variables', exact: true })).toBeVisible()
 })

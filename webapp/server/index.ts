@@ -65,22 +65,24 @@ export async function startApplication({
             if (isRecord(error) && (error.code === 'ENOENT' || error.code === 'ENOTDIR')) return null
             throw error
           })
-          let statusCode = 200
           if (!fileInfo?.isFile()) {
             const knownRoute = Object.values(APP_PATHS).some((path) => path === pathname.replace(/\/$/, ''))
-            const documentRoute = !extname(pathname) &&
-              !/^\/(?:api|ws)(?:\/|$)/.test(pathname) &&
+            const documentRoute = !/^\/(?:api|ws|assets|fonts)(?:\/|$)/.test(pathname) &&
               request.headers.accept?.includes('text/html')
-            if (!knownRoute && !documentRoute) {
-              response.writeHead(404)
-              response.end('Recurso no disponible.')
+            if (!knownRoute) {
+              if (documentRoute) {
+                response.writeHead(302, { location: APP_PATHS.monitor, 'cache-control': 'no-store' })
+                response.end()
+              } else {
+                response.writeHead(404)
+                response.end('Recurso no disponible.')
+              }
               return
             }
             file = resolve(root, 'index.html')
-            statusCode = knownRoute ? 200 : 404
           }
           const content = await readFile(file)
-          response.writeHead(statusCode, {
+          response.writeHead(200, {
             'content-type': types[extname(file)] || 'application/octet-stream',
             'cache-control': 'no-cache',
           })

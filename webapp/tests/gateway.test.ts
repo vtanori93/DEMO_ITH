@@ -242,7 +242,7 @@ await test('decodifica las representaciones de datos WebSocket sin conversiones 
   assert.equal(websocketText(new TextEncoder().encode(payload).buffer), payload)
 })
 
-await test('sirve las rutas del navegador al recargar y mantiene los 404 de recursos y API', async () => {
+await test('sirve las rutas y redirige documentos desconocidos al monitor sin redirigir recursos ni API', async () => {
   const context = await fixture()
   try {
     for (const path of ['/monitor', '/connection', '/protocol', '/connection/']) {
@@ -254,10 +254,25 @@ await test('sirve las rutas del navegador al recargar y mantiene los 404 de recu
     const head = await fetch(`${context.origin}/monitor`, { method: 'HEAD' })
     assert.equal(head.status, 200)
     assert.equal(await head.text(), '')
-    const missingPage = await fetch(`${context.origin}/no-existe`, { headers: { accept: 'text/html' } })
-    assert.equal(missingPage.status, 404)
-    assert.match(await missingPage.text(), /<title>Voltio<\/title>/)
-    for (const path of ['/assets/missing.js', '/api/no-existe', '/ws/no-existe']) {
+    for (const path of ['/login', '/no-existe', '/ruta/anidada', '/login.html', '/login?from=prueba']) {
+      const response = await fetch(`${context.origin}${path}`, {
+        headers: { accept: 'text/html' }, redirect: 'manual',
+      })
+      assert.equal(response.status, 302)
+      assert.equal(response.headers.get('location'), '/monitor')
+      assert.equal(response.headers.get('cache-control'), 'no-store')
+    }
+    const missingHead = await fetch(`${context.origin}/login`, {
+      method: 'HEAD', headers: { accept: 'text/html' }, redirect: 'manual',
+    })
+    assert.equal(missingHead.status, 302)
+    assert.equal(missingHead.headers.get('location'), '/monitor')
+    assert.equal(await missingHead.text(), '')
+    const followed = await fetch(`${context.origin}/login`, { headers: { accept: 'text/html' } })
+    assert.equal(followed.status, 200)
+    assert.equal(followed.url, `${context.origin}/monitor`)
+    assert.match(await followed.text(), /<title>Voltio<\/title>/)
+    for (const path of ['/assets/missing.js', '/assets/no-existe', '/fonts/missing.woff2', '/api/no-existe', '/ws/no-existe']) {
       const response = await fetch(`${context.origin}${path}`, { headers: { accept: 'text/html' } })
       assert.equal(response.status, 404)
       assert.doesNotMatch(await response.text(), /<title>Voltio<\/title>/)

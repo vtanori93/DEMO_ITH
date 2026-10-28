@@ -1,26 +1,33 @@
-// ESP32: enviar tres valores flotantes de prueba a Voltio cada segundo. Configura las redes Wi-Fi.
+// ESP32: listo para Voltio. Solo cambia el nombre y la contraseña de tu Wi-Fi.
 #include <WiFi.h>
 #include <WebSocketsClient.h>
 #include <esp_task_wdt.h>
 #include <esp_attr.h>
 #include <esp_system.h>
+#include <http_parser.h>
 #include <time.h>
+
+// ===================== SOLO EDITA ESTOS DOS DATOS =====================
+const char WIFI_SSID[] = "TU_RED_WIFI";
+const char WIFI_PASSWORD[] = "TU_CONTRASENA_WIFI";
+// ====================================================================
+// El servidor, puerto, ruta, certificado y envío cada segundo ya están configurados.
+
+// Destino completo. Solo cambia esta URL si en el futuro cambia el receptor.
+const char WS_URL[] = "wss://grain-exploring-setting.ngrok-free.dev/ws/esp32?device=esp32-01";
 
 struct WifiNetwork {
   const char* ssid;
   const char* password;
 };
 
-// Agrega o elimina renglones. Se prueban en este orden; elimina las redes que no uses.
+// Una sola red activa: no necesitas completar ni eliminar redes de ejemplo.
+// Opcional: agrega más renglones para disponer de redes de respaldo.
 const WifiNetwork WIFI_NETWORKS[] = {
-  {"TU_RED_PRINCIPAL", "CONTRASENA_PRINCIPAL"},
-  {"TU_RED_DE_RESPALDO", "CONTRASENA_RESPALDO"},
-  {"TU_PUNTO_DE_ACCESO", "CONTRASENA_PUNTO_DE_ACCESO"},
+  {WIFI_SSID, WIFI_PASSWORD},
 };
 const size_t WIFI_NETWORK_COUNT = sizeof(WIFI_NETWORKS) / sizeof(WIFI_NETWORKS[0]);
 static_assert(WIFI_NETWORK_COUNT > 0, "Configura al menos una red Wi-Fi.");
-const char WS_HOST[] = "grain-exploring-setting.ngrok-free.dev";
-const char WS_PATH[] = "/ws/esp32?device=esp32-01";
 const uint32_t SEND_INTERVAL_MS = 1000;
 const uint32_t WIFI_RETRY_MS = 10000;
 const uint32_t WIFI_FAILOVER_MS = 60000;
@@ -64,6 +71,7 @@ emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
 )PEM";
 
 WebSocketsClient socket;
+bool socketConfigured = false;
 bool connected = false;
 bool wifiReady = false;
 bool watchdogEnabled = false;
@@ -77,6 +85,33 @@ size_t wifiIndex = 0;
 RTC_NOINIT_ATTR uint32_t wifiRecoveryMarker;
 RTC_NOINIT_ATTR uint32_t wifiRecoveryIndex;
 const uint32_t WIFI_RECOVERY_MARKER = 0x564F4C54;
+
+// Usa el analizador incluido en ESP32; no requiere otra biblioteca de Arduino.
+bool configureSocketUrl(const char* url) {
+  if (url == nullptr || strlen(url) > 2048 || strchr(url, '#') != nullptr) return false;
+  http_parser_url parsed = {};
+  if (http_parser_parse_url(url, strlen(url), 0, &parsed) != 0) return false;
+  const uint16_t required = (1 << UF_SCHEMA) | (1 << UF_HOST);
+  const uint16_t forbidden = (1 << UF_USERINFO) | (1 << UF_FRAGMENT);
+  if ((parsed.field_set & required) != required || (parsed.field_set & forbidden) != 0)
+    return false;
+  const auto field = [&](http_parser_url_fields id) {
+    const auto part = parsed.field_data[id];
+    return String(url + part.off, part.len);
+  };
+  if (!field(UF_SCHEMA).equalsIgnoreCase("wss")) return false;
+  const String host = field(UF_HOST);
+  const uint16_t port = (parsed.field_set & (1 << UF_PORT)) ? parsed.port : 443;
+  if (port == 0) return false;
+  String path = (parsed.field_set & (1 << UF_PATH)) ? field(UF_PATH) : String("/");
+  if (parsed.field_set & (1 << UF_QUERY)) {
+    path += '?';
+    path += field(UF_QUERY);
+  }
+  // WebSocketsClient copia el servidor y la ruta para las reconexiones.
+  socket.beginSslWithCA(host.c_str(), port, path.c_str(), ROOT_CA, "");
+  return true;
+}
 
 void connectWifi(bool nextNetwork) {
   if (nextNetwork) wifiIndex = (wifiIndex + 1) % WIFI_NETWORK_COUNT;
@@ -137,17 +172,26 @@ void setup() {
   configTime(0, 0, "pool.ntp.org", "time.google.com", "time.cloudflare.com");
   lastNtpRetry = millis();
 
-  socket.beginSslWithCA(WS_HOST, 443, WS_PATH, ROOT_CA, "");
+  socketConfigured = configureSocketUrl(WS_URL);
+  if (!socketConfigured) {
+    Serial.println("[Voltio] WS_URL inválida. Usa wss://servidor[:puerto]/ruta, sin credenciales ni #.");
+    return;
+  }
   socket.onEvent(socketEvent);
   socket.setExtraHeaders("ngrok-skip-browser-warning: true\r\n");
   socket.setReconnectInterval(3000);
   socket.enableHeartbeat(5000, 5000, 2);
   connectWifi(false);
+  Serial.printf("[Voltio] Destino configurado: %s\n", WS_URL);
   Serial.println("Conectando a una red Wi-Fi y sincronizando la fecha...");
 }
 
 void loop() {
   if (watchdogEnabled) esp_task_wdt_reset();
+  if (!socketConfigured) {
+    delay(100);
+    return;
+  }
   if (WiFi.status() != WL_CONNECTED) {
     if (connected) socket.disconnect();
     connected = false;

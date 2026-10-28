@@ -14,10 +14,10 @@ ESP32 cliente WebSocket
 
 - **`server/`** implementa el receptor, la API y su persistencia. `index.ts` sirve la compilación; `supervisor.ts` lo reinicia ante caídas o falta de respuesta. `vite-gateway.ts` lo integra en desarrollo y preview.
 - **`app/`** compone proveedores y rutas. El proveedor de recepción consulta el estado del servidor; el de telemetría administra la sesión de visualización.
-- **`pages/`** compone las vistas y se carga de forma diferida.
+- **`pages/`** compone las vistas, incluidas en la carga inicial de la aplicación.
 - **`features/gateway/`** presenta la configuración y la dirección para compartir con el emisor.
 - **`features/telemetry/`** separa dominio, estado, transportes y visualización. Su validador se reutiliza en el servidor para comprobar cada medición y su rango.
-- **`features/indicators/`** define las preferencias de presentación, su contrato validado y el editor diferido con vista previa. `IndicatorProvider` persiste las preferencias por variable y las comparte con las tarjetas y la gráfica, fuera del ciclo de adquisición.
+- **`features/indicators/`** define las preferencias de presentación, su contrato validado y el editor con vista previa. El editor se incluye en la carga inicial y solo se monta al abrirlo. `IndicatorProvider` persiste las preferencias por variable y las comparte con las tarjetas y la gráfica, fuera del ciclo de adquisición.
 - **`shared/contracts/`** define las rutas y los tipos que comparten servidor y navegador.
 - **`shared/ui/`** contiene controles, paneles, iconos y avisos sin conocimiento del ESP32.
 
@@ -65,15 +65,15 @@ El supervisor consulta `/api/gateway/health` cada segundo y reinicia un proceso 
 
 Publicar únicamente los archivos de `dist/` no proporciona el servidor de entrada. Los datos históricos permanentes y el acceso de varios dispositivos a la vez requerirían una extensión del modelo y de la persistencia; el contrato actual administra un emisor y tres valores.
 
-## Rutas, guards y carga diferida
+## Rutas y guards
 
-`shared/contracts/navigation.ts` centraliza las direcciones. `app/routes.ts` define metadatos, guard y componente diferido para cada vista; `app/router.tsx` compone el árbol con `createBrowserRouter`. `AppShell` presenta los enlaces y un `Outlet` con `Suspense`. La página 404 también se carga bajo demanda y los errores de las vistas permiten reintentar la carga.
+`shared/contracts/navigation.ts` centraliza las direcciones. `app/routes.ts` define metadatos, guard y componente para cada vista; `app/router.tsx` compone el árbol con `createBrowserRouter`. `AppShell` presenta los enlaces y un `Outlet`. Las vistas y la personalización se importan estáticamente: después de abrir la aplicación, navegar no depende de nuevas descargas de JavaScript o CSS. Esto elimina los rechazos persistentes de `React.lazy` cuando una descarga falla durante un corte de red o tras reanudar una pestaña móvil. Los errores de renderizado se registran en consola y conservan una pantalla de recuperación.
 
-`GatewayGuard` espera a obtener un estado válido antes de montar o descargar la vista de configuración. Si el receptor falla inicialmente, presenta un estado recuperable; cuando vuelve a responder permite continuar. No bloquea el monitor porque el ESP32 esté desconectado ni impide habilitar un receptor pausado.
+`GatewayGuard` espera a obtener un estado válido antes de montar la vista de configuración. Si el receptor falla inicialmente, presenta un estado recuperable; cuando vuelve a responder permite continuar. No bloquea el monitor porque el ESP32 esté desconectado ni impide habilitar un receptor pausado.
 
 `UnsavedChangesGuard` utiliza `useBlocker` y un diálogo nativo accesible para proteger las ediciones al navegar, además de `beforeunload` para recargar o cerrar la pestaña. Revertir una edición al valor guardado elimina el bloqueo.
 
-Las rutas `/monitor`, `/connection` y `/protocol` admiten entrada directa y recarga. El servidor integrado entrega `index.html` para las rutas de la aplicación; conserva los 404 de archivos, API y WebSockets inexistentes. Las rutas desconocidas de documento muestran la página 404 de React. Los enlaces anteriores por fragmentos siguen funcionando mediante redirección.
+Las rutas `/monitor`, `/connection` y `/protocol` admiten entrada directa y recarga. El servidor integrado entrega `index.html` para las rutas de la aplicación; conserva los 404 de archivos, API y WebSockets inexistentes. Las rutas desconocidas de documento redirigen al monitor principal con HTTP 302; dentro de la aplicación, la ruta comodín utiliza `Navigate` con `replace` para evitar conservar la dirección inválida en el historial. Los enlaces anteriores por fragmentos siguen funcionando mediante redirección.
 
 ## Pipes de presentación
 

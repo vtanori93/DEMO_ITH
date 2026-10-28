@@ -1,8 +1,7 @@
-import { Suspense, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigationType } from 'react-router'
 import { routes, useRoute } from '../routes'
 import { APP_PATHS } from '../../shared/contracts/navigation'
-import { RouteLoading } from '../routing/RouteLoading'
 import { Icon } from '../../shared/ui/Icon'
 import { DeviceStateLabel } from '../../features/gateway/ui/GatewayPresence'
 import { MobileNavigation } from './MobileNavigation'
@@ -135,7 +134,7 @@ export function AppShell() {
             <div className={styles.breadcrumb}>
               <span>Espacio de trabajo</span>
               <Icon name="chevron" size={14} />
-              <strong>{route?.label ?? 'Página no encontrada'}</strong>
+              <strong>{route?.label ?? routes.monitor.label}</strong>
             </div>
           </div>
           <span className={styles.localTag}>
@@ -146,9 +145,7 @@ export function AppShell() {
         </header>
         <main id="main-content" tabIndex={-1} className={styles.main}>
           <div className={styles.pageContent}>
-            <Suspense fallback={<RouteLoading />}>
-              <Outlet />
-            </Suspense>
+            <Outlet />
           </div>
           <footer className={styles.footer}>
             <span>

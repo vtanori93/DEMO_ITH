@@ -14,10 +14,13 @@ Requiere Node.js **22.22 o superior** y npm.
 
 ```sh
 npm install
-npm run dev
+npm run build
+npm start
 ```
 
 Abre **http://localhost:5173**. El servidor escucha también en la red local.
+
+Este es el modo recomendado para compartir con ngrok y usar desde móviles: sirve la aplicación compilada y mantiene el receptor supervisado. Para editar el código con recarga de desarrollo utiliza `npm run dev`, con `npm start` detenido.
 
 ## Dominio público en `.env`
 
@@ -126,7 +129,7 @@ La recuperación requiere que el equipo, la red y el túnel estén disponibles. 
 - Header visible al desplazarse, también en móvil horizontal. Sidebar de escritorio colapsable desde el botón del header; recuerda la preferencia en este navegador y conserva la navegación por iconos. Los márgenes de escritorio se mantienen en 24 píxeles en ambos estados.
 - Menú hamburguesa móvil con panel lateral personalizado, sección activa y estado del ESP32. Se cierra al navegar, tocar el fondo, pulsar el cierre o usar Escape; conserva el desplazamiento y respeta el movimiento reducido.
 - Indicadores, mínimos y máximos, gráfica de 30/60/120 segundos y exportación CSV.
-- Personalización independiente de cada indicador: nombre, color de paleta o HEX, arco/anillo/barra/digital, 0–4 decimales, tamaño del valor y grosor. Permite mostrar u ocultar escala, divisiones y extremos, y activar animaciones. El editor se carga al abrirlo e incluye una vista previa con valores de ejemplo.
+- Personalización independiente de cada indicador: nombre, color de paleta o HEX, arco/anillo/barra/digital, 0–4 decimales, tamaño del valor y grosor. Permite mostrar u ocultar escala, divisiones y extremos, y activar animaciones. El editor se monta al abrirlo, sin nuevas descargas, e incluye una vista previa con valores de ejemplo.
 - Umbrales inferior y superior por variable con avisos visuales para lecturas recientes. Los rangos físicos, los mensajes WebSocket y el CSV conservan los valores originales. Los cambios se aplican al guardar; se pueden cancelar o restaurar por tarjeta o para las tres.
 - Las preferencias se guardan en este navegador y se sincronizan entre sus pestañas. Si el almacenamiento está bloqueado, se aplican durante la sesión y se muestra un aviso. Una preferencia dañada recupera los valores iniciales de la variable afectada.
 - Reconexión, detección de lecturas antiguas y simulación explícita.
@@ -145,9 +148,11 @@ Puedes ejecutar `npm run typecheck` y `npm run lint` por separado. `npm run lint
 
 Para las pruebas de navegador, instala una vez `npx playwright install chromium firefox webkit`. Las pruebas HTTPS usan OpenSSL para generar un certificado temporal. Las suites comprueban recepción desde un cliente externo, configuración y persistencia, WebSocket por HTTPS/WSS, rangos de temperatura, voltaje y corriente, reconexión, CSV, tamaños de 320 a 1440 píxeles y texto al 200 %. Usan clientes de prueba y servidores locales, sin hardware ni túneles públicos activos.
 
+Tras compilar, `VOLTIO_TEST_PRODUCTION=1 npx playwright test tests/browser/view-loading.spec.ts` comprueba la navegación sin descargas adicionales, los cortes de red y la recuperación de lecturas en Chromium, Firefox y WebKit móvil sobre el servidor de producción.
+
 ## Organización
 
-Las vistas utilizan React Router con rutas `/monitor`, `/connection` y `/protocol`. Se cargan bajo demanda, mantienen Atrás/Adelante y permiten recargar una ruta directamente en desarrollo, preview y con el servidor integrado. Los enlaces antiguos `/#monitor`, `/#connection` y `/#protocol` redirigen a sus rutas actuales; las direcciones desconocidas muestran una página 404.
+Las vistas utilizan React Router con rutas `/monitor`, `/connection` y `/protocol`. Las vistas y la personalización de indicadores se incluyen en la carga inicial: navegar o abrir el editor no descarga módulos adicionales. Así, un corte de cobertura o una pestaña reanudada no deja una importación fallida bloqueada durante toda la sesión. Mantienen Atrás/Adelante y permiten recargar una ruta directamente en desarrollo, preview y con el servidor integrado. Los enlaces antiguos `/#monitor`, `/#connection` y `/#protocol` redirigen a sus rutas actuales; las direcciones desconocidas redirigen automáticamente al monitor principal (`/monitor`), reemplazando la entrada inválida del historial.
 
 El guard de configuración espera a que el receptor esté disponible y vuelve a comprobarlo automáticamente si falla. El guard de cambios pendientes permite continuar editando o descartar antes de cambiar de ruta, y avisa al recargar o cerrar la pestaña. La recepción WebSocket continúa entre pantallas.
 

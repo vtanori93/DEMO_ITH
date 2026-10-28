@@ -1,8 +1,12 @@
-import { lazy } from 'react'
 import { useLocation } from 'react-router'
+import MonitorPage from '../pages/MonitorPage'
+import ConnectionPage from '../pages/ConnectionPage'
+import ProtocolPage from '../pages/ProtocolPage'
 import { APP_PATHS } from '../shared/contracts/navigation'
 export type { RouteId } from '../shared/contracts/navigation'
 
+// Las vistas forman parte de la carga inicial. Navegar no debe depender de
+// otra descarga que pueda fallar al perder cobertura o reanudar una pestaña.
 export const routes = {
   monitor: {
     path: APP_PATHS.monitor,
@@ -10,7 +14,7 @@ export const routes = {
     label: 'Monitor',
     description: 'Temperatura, voltaje y corriente',
     icon: 'grid',
-    component: lazy(() => import('../pages/MonitorPage')),
+    component: MonitorPage,
   },
   connection: {
     path: APP_PATHS.connection,
@@ -18,7 +22,7 @@ export const routes = {
     label: 'Conexión',
     description: 'Tu enlace con el ESP32',
     icon: 'plug',
-    component: lazy(() => import('../pages/ConnectionPage')),
+    component: ConnectionPage,
   },
   protocol: {
     path: APP_PATHS.protocol,
@@ -26,7 +30,7 @@ export const routes = {
     label: 'Protocolo de datos',
     description: 'El formato de tus mensajes',
     icon: 'code',
-    component: lazy(() => import('../pages/ProtocolPage')),
+    component: ProtocolPage,
   },
 } as const
 export function useRoute() {

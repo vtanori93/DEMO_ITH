@@ -47,7 +47,7 @@ test('inicio sin lecturas inventadas, navegación y validación de dirección', 
   await expect(page.getByRole('alert')).toContainText('ws:// o wss://')
   await page.getByRole('link', { name: 'Protocolo de datos', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Un mensaje, tres canales' })).toBeVisible()
-  await expect(page.locator('pre')).toContainText('"temperature": 25')
+  await expect(page.locator('pre')).toContainText('"temperature": -12.3456')
   await page.getByRole('link', { name: 'Conexión', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Configura la recepción' })).toBeVisible()
   expect(errors).toEqual([])

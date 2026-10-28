@@ -1,9 +1,9 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, Navigate } from 'react-router'
 import { AppShell } from './layout/AppShell'
 import { GatewayGuard } from './guards/GatewayGuard'
 import { RouteErrorPage } from './routing/RouteErrorPage'
 import { IndexRedirect } from './routing/IndexRedirect'
-import { NotFoundRoute } from './routing/NotFoundRoute'
+import { APP_PATHS } from '../shared/contracts/navigation'
 import { routes } from './routes'
 
 export const router = createBrowserRouter([
@@ -21,7 +21,7 @@ export const router = createBrowserRouter([
           errorElement: <RouteErrorPage />,
         }
       }),
-      { path: '*', element: <NotFoundRoute />, errorElement: <RouteErrorPage /> },
+      { path: '*', element: <Navigate to={APP_PATHS.monitor} replace /> },
     ],
   },
 ])

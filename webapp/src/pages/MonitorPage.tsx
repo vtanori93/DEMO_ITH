@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Icon } from '../shared/ui/Icon'
 import { Button } from '../shared/ui/Button'
 import { Notice } from '../shared/ui/Notice'
@@ -13,9 +13,8 @@ import { ChartPanel } from '../features/telemetry/ui/ChartPanel'
 import { SessionCard } from '../features/telemetry/ui/SessionCard'
 import { GatewayPresence } from '../features/gateway/ui/GatewayPresence'
 import { ReceiverConnection } from '../features/gateway/ui/ReceiverConnection'
+import IndicatorCustomizer from '../features/indicators/ui/IndicatorCustomizer'
 import styles from '../features/telemetry/ui/telemetry.module.css'
-
-const IndicatorCustomizer = lazy(() => import('../features/indicators/ui/IndicatorCustomizer'))
 
 function Measurements({ onCustomize }: { onCustomize: (channel: ChannelIndex, trigger: HTMLButtonElement) => void }) {
   const { settings } = useIndicators()
@@ -66,12 +65,12 @@ export default function MonitorPage() {
         <Button variant="secondary" onClick={(event) => customize(0, event.currentTarget)}><Icon name="sliders" size={18} />Personalizar indicadores</Button>
       </div>
       <Measurements onCustomize={customize} />
-      {customizing !== null && <Suspense fallback={<p role="status">Abriendo personalización…</p>}>
+      {customizing !== null &&
         <IndicatorCustomizer initialChannel={customizing} onDismiss={() => {
           setCustomizing(null)
           customizationTrigger.current?.focus({ preventScroll: true })
         }} />
-      </Suspense>}
+      }
       <div className={styles.lowerGrid}>
         <ChartPanel />
         <SessionCard />

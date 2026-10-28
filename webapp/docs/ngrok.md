@@ -53,7 +53,7 @@ npm run build
 npm start
 ```
 
-Con el servidor de desarrollo detenido, el servidor integrado sirve la web y recibe los WebSockets en el puerto 5173. Usa `npm run tunnel` para compartirlo. No basta con publicar únicamente `dist/`: el proceso receptor tiene que permanecer en ejecución.
+Con el servidor de desarrollo detenido, el servidor integrado sirve la web y recibe los WebSockets en el puerto 5173. Es el modo recomendado para compartir con móviles: entrega código compilado, con todas las vistas disponibles desde el arranque, y evita exponer las numerosas peticiones de módulos y la recarga de desarrollo. Usa `npm run tunnel` para compartirlo. No basta con publicar únicamente `dist/`: el proceso receptor tiene que permanecer en ejecución.
 
 La revisión con `npm run preview` usa el puerto 4173 y también incorpora el receptor. Comparte esa revisión con `npm run tunnel:preview`.
 
